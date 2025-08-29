@@ -3,16 +3,19 @@ package org.intensiv;
 import org.intensiv.entity.User;
 import org.intensiv.service.UserService;
 import org.intensiv.util.HibernateUtil;
+import org.intensiv.util.LiquiBaseUtil;
 
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
     private static final Scanner scanner = new Scanner(System.in);
-    private static final UserService userService = new UserService();
+    private static UserService userService;
 
     public static void main(String[] args) {
         try {
+            LiquiBaseUtil.runMigrations();
+            userService = new UserService();
             runApplication();
         } catch (Exception e) {
             e.printStackTrace();
@@ -86,7 +89,13 @@ public class Main {
 
     private static void getUser() {
         try {
-            userService.getUser(getLongInput("User ID:"));
+            User user = userService.getUser(getLongInput("User ID:"));
+            if (user == null) {
+                System.out.println("User не найден");
+                return;
+            }
+            System.out.printf("ID: %d | %s | %s | %d лет%n",
+                    user.getId(), user.getName(), user.getEmail(), user.getAge());
         } catch (Exception e) {
             e.printStackTrace();
         }

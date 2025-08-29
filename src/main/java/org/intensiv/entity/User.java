@@ -1,15 +1,14 @@
 package org.intensiv.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "users")
 @RequiredArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
 public class User {
@@ -31,5 +30,11 @@ public class User {
     private Integer age;
 
     @Basic(optional = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    private void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
