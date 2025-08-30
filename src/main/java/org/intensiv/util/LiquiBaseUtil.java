@@ -26,6 +26,8 @@ public class LiquiBaseUtil {
             );
 
             liquibase.update("");
+            liquibase.close();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
