@@ -6,8 +6,8 @@
           http://www.liquibase.org/xml/ns/dbchangelog
           http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.33.xsd">
 
-    <changeSet id="create_table_user" author="Roman">
-        <createTable tableName="user">
+    <changeSet id="create_table_users" author="Roman">
+        <createTable tableName="users">
             <column name="id" type="bigserial">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
@@ -20,7 +20,7 @@
             <column name="age" type="integer">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="created_at" type="timestamp">
                 <constraints nullable="false"/>
             </column>
         </createTable>
