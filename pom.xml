@@ -33,6 +33,7 @@
             <artifactId>liquibase-core</artifactId>
             <version>4.33.0</version>
         </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -58,5 +59,26 @@
             <version>2.0.17</version>
         </dependency>
     </dependencies>
-
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.liquibase</groupId>
+                    <artifactId>liquibase-maven-plugin</artifactId>
+                    <version>4.33.0</version>
+                    <configuration>
+                        <propertyFile>liquibase.properties</propertyFile>
+                    </configuration>
+                    <!-- https://mvnrepository.com/artifact/org.liquibase/liquibase-maven-plugin -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.liquibase</groupId>
+                            <artifactId>liquibase-maven-plugin</artifactId>
+                            <version>4.33.0</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

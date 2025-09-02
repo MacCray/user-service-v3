@@ -2,10 +2,8 @@ package org.intensiv.dao;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.hibernate.HibernateException;
 import org.hibernate.SessionFactory;
-import org.hibernate.exception.ConstraintViolationException;
 import org.intensiv.entity.User;
 
 import java.util.List;
@@ -20,14 +18,6 @@ public class UserDAOImpl implements UserDAO {
         log.debug("Сохранение пользователя: name={}, email={}", user.getName(), user.getEmail());
         try {
             sessionFactory.inTransaction(session -> session.persist(user));
-        } catch (ConstraintViolationException e) {
-            String sqlState = e.getSQLState();
-            String constraint = e.getConstraintName();
-            if ("23505".equals(sqlState) || (constraint != null && constraint.contains("users_email_key"))) {
-                // Duplicate email business conflict: no extra stack logging here to avoid duplication
-                throw e;
-            }
-            throw e;
         } catch (HibernateException e) {
             log.error("Ошибка Hibernate при сохранении пользователя name={} email={}", user.getName(), user.getEmail(), e);
             throw e;

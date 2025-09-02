@@ -3,6 +3,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 logs/
+src/main/resources/hibernate.properties
+src/main/resources/liquibase.properties
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

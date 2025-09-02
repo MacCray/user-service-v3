@@ -31,10 +31,10 @@ public class User {
 
     @Basic(optional = false)
     @Column(updatable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime created_at;
 
     @PrePersist
     private void onCreate() {
-        createdAt = LocalDateTime.now();
+        created_at = LocalDateTime.now();
     }
 }

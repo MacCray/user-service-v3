@@ -20,7 +20,7 @@
             <column name="age" type="integer">
                 <constraints nullable="false"/>
             </column>
-            <column name="createdat" type="timestamp">
+            <column name="created_at" type="timestamp">
                 <constraints nullable="false"/>
             </column>
         </createTable>
