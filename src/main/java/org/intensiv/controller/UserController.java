@@ -51,25 +51,10 @@ public class UserController {
             System.out.print("Имя: ");
             String name = scanner.nextLine().trim();
 
-            if (name.isEmpty()) {
-                System.out.println("Имя не может быть пустым");
-                return;
-            }
-
             System.out.print("Email: ");
             String email = scanner.nextLine().trim();
 
-            if (email.isEmpty()) {
-                System.out.println("Email не может быть пустым");
-                return;
-            }
-
             int age = getIntInput("Возраст: ");
-
-            if (age < 0 || age > 150) {
-                System.out.println("Некорректный возраст");
-                return;
-            }
 
             User user = new User(name, email, age);
             userService.createUser(user);
@@ -145,11 +130,7 @@ public class UserController {
             if (!ageInput.isEmpty()) {
                 try {
                     int newAge = Integer.parseInt(ageInput);
-                    if (newAge >= 0 && newAge <= 150) {
-                        user.setAge(newAge);
-                    } else {
-                        System.out.println("Некорректный возраст, оставлен прежний");
-                    }
+                    user.setAge(newAge);
                 } catch (NumberFormatException e) {
                     System.out.println("Некорректный формат возраста, оставлен прежний");
                 }

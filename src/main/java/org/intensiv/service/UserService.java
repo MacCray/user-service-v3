@@ -1,13 +1,12 @@
 package org.intensiv.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.intensiv.dao.UserDAO;
 import org.intensiv.entity.User;
 import org.intensiv.exception.UserNotFoundException;
 import org.intensiv.exception.UserValidationException;
 
 import java.util.List;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class UserService {
@@ -44,18 +43,18 @@ public class UserService {
     }
 
     public void updateUser(User user) {
-        if (user == null || user.getId() == null) {
-            throw new UserValidationException("Пользователь и его ID не могут быть null");
-        }
         validateUser(user);
+        if (user.getId() == null || user.getId() <= 0) {
+            throw new UserValidationException("ID не может быть null");
+        }
         log.debug("Обновление пользователя id={} name={}", user.getId(), user.getName());
         userDAO.update(user);
         log.info("Пользователь обновлен id={}", user.getId());
     }
 
     public void deleteUser(User user) {
-        if (user == null || user.getId() == null) {
-            throw new UserValidationException("Пользователь и его ID не могут быть null");
+        if (user == null || user.getId() == null || user.getId() <= 0) {
+            throw new UserValidationException("Пользователь или ID не может быть null");
         }
         log.debug("Удаление пользователя id={} name={}", user.getId(), user.getName());
         userDAO.delete(user);
