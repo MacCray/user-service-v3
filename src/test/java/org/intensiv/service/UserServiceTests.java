@@ -126,7 +126,7 @@ class UserServiceTests {
 
     // getUser tests
     @ParameterizedTest
-    @ValueSource(longs = { 1L, 10L, 3543L, Long.MAX_VALUE })
+    @ValueSource(longs = {1L, 10L, 3543L, Long.MAX_VALUE})
     void getUser_withValidId_shouldReturnUser(Long id) {
         when(userDAO.findById(id)).thenReturn(validUser);
 
@@ -137,7 +137,7 @@ class UserServiceTests {
     }
 
     @ParameterizedTest
-    @ValueSource(longs = { 0L, -10L })
+    @ValueSource(longs = {0L, -10L})
     @NullSource
     void getUser_withInvalidId_shouldThrowException(Long id) {
         assertThrows(UserValidationException.class, () -> userService.getUser(id));
