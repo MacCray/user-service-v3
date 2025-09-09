@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@RequiredArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
@@ -16,16 +15,13 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NonNull
     @Basic(optional = false)
     private String name;
 
-    @NonNull
     @Basic(optional = false)
     @Column(unique = true)
     private String email;
 
-    @NonNull
     @Basic(optional = false)
     private Integer age;
 
@@ -36,5 +32,11 @@ public class User {
     @PrePersist
     private void onCreate() {
         created_at = LocalDateTime.now();
+    }
+
+    public User(String name, String email, Integer age) {
+        this.name = name;
+        this.email = email;
+        this.age = age;
     }
 }
