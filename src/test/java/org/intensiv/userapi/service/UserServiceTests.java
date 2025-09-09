@@ -1,9 +1,9 @@
-package org.intensiv.service;
+package org.intensiv.userapi.service;
 
 import org.intensiv.dao.UserDAO;
-import org.intensiv.entity.User;
-import org.intensiv.exception.UserNotFoundException;
-import org.intensiv.exception.UserValidationException;
+import org.intensiv.userapi.entity.User;
+import org.intensiv.userapi.exception.UserNotFoundException;
+import org.intensiv.userapi.exception.UserValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;

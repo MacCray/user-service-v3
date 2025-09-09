@@ -1,7 +1,9 @@
-package org.intensiv.entity;
+package org.intensiv.userapi.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
@@ -29,14 +31,14 @@ public class User {
     @Column(updatable = false)
     private LocalDateTime created_at;
 
-    @PrePersist
-    private void onCreate() {
-        created_at = LocalDateTime.now();
-    }
-
     public User(String name, String email, Integer age) {
         this.name = name;
         this.email = email;
         this.age = age;
+    }
+
+    @PrePersist
+    private void onCreate() {
+        created_at = LocalDateTime.now();
     }
 }

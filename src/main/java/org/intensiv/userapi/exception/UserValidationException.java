@@ -1,4 +1,4 @@
-package org.intensiv.exception;
+package org.intensiv.userapi.exception;
 
 public class UserValidationException extends RuntimeException {
 

@@ -1,4 +1,4 @@
-package org.intensiv.dao;
+package org.intensiv.userapi.repository;
 
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -8,8 +8,6 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.hibernate.HibernateException;
-import org.intensiv.entity.User;
-import org.intensiv.util.HibernateUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +22,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
-public class UserDaoIT {
+public class UserRepositoryIT {
     @Container
     public static final PostgreSQLContainer<?> pgContainer = new PostgreSQLContainer<>("postgres:16.3")
             .withDatabaseName("test_db")
