@@ -5,9 +5,11 @@ import org.intensiv.entity.User;
 import org.intensiv.exception.UserNotFoundException;
 import org.intensiv.exception.UserValidationException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -31,75 +33,39 @@ class UserServiceTests {
     private UserService userService;
     private User validUser;
 
-    static Stream<User> invalidUserProviderForCreate() {
+    static Stream<Arguments> invalidUserProviderForCreate() {
         return Stream.of(
-                new User(null, "email@gmail.com", 1) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("", "email@gmail.com", 1) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("   ", "email@gmail.com", 1) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("Иван", null, 1) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("Иван", "", 1) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("Иван", "  ", 1) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("Иван", "email@gmail.com", null) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("Иван", "email@gmail.com", 200) {
-                    {
-                        setId(1L);
-                    }
-                },
-                new User("Иван", "email@gmail.com", -10) {
-                    {
-                        setId(1L);
-                    }
-                });
+                Arguments.of(Named.of("Имя = null", new User(null, "email@gmail.com", 1))),
+                Arguments.of(Named.of("Имя = пустое", new User("", "email@gmail.com", 1))),
+                Arguments.of(Named.of("Имя = пробелы", new User("   ", "email@gmail.com", 1))),
+                Arguments.of(Named.of("Email = null", new User("Иван", null, 1))),
+                Arguments.of(Named.of("Email = пустой", new User("Иван", "", 1))),
+                Arguments.of(Named.of("Email = пробелы", new User("Иван", "  ", 1))),
+                Arguments.of(Named.of("Возраст = null", new User("Иван", "email@gmail.com", null))),
+                Arguments.of(Named.of("Возраст > 150", new User("Иван", "email@gmail.com", 200))),
+                Arguments.of(Named.of("Возраст < 0", new User("Иван", "email@gmail.com", -10))));
     }
 
-    static Stream<User> invalidUserProviderForDelete() {
+    static Stream<Arguments> invalidUserProviderForDelete() {
         return Stream.of(
-                new User("Иван", "email@gmail.com", 1) {
+                Arguments.of(Named.of("Id = null", new User("Иван", "email@gmail.com", 1) {
                     {
                         setId(null);
                     }
-                },
-                new User("Иван", "email@gmail.com", 1) {
+                })),
+                Arguments.of(Named.of("Id = 0", new User("Иван", "email@gmail.com", 1) {
                     {
                         setId(0L);
                     }
-                },
-                new User("Иван", "email@gmail.com", 1) {
+                })),
+                Arguments.of(Named.of("Id < 0", new User("Иван", "email@gmail.com", 1) {
                     {
                         setId(-10L);
                     }
-                });
+                })));
     }
 
-    static Stream<User> invalidUserProviderForUpdate() {
+    static Stream<Arguments> invalidUserProviderForUpdate() {
         return Stream.concat(invalidUserProviderForDelete(), invalidUserProviderForCreate());
     }
 
@@ -109,14 +75,13 @@ class UserServiceTests {
         validUser.setId(1L);
     }
 
-    // createUser tests
     @Test
     void createUser_withValidUser_shouldCallSave() {
         userService.createUser(validUser);
         verify(userDAO).save(validUser);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Тест - {index}: Создание пользователя с [{0}] выбрасывает исключение")
     @MethodSource("invalidUserProviderForCreate")
     @NullSource
     void createUser_withInvalidUser_shouldThrowException(User user) {
@@ -124,8 +89,7 @@ class UserServiceTests {
         verify(userDAO, never()).save(any());
     }
 
-    // getUser tests
-    @ParameterizedTest
+    @ParameterizedTest(name = "Тест - {index}: Получения пользователя с id = [{0}] возвращает корректного пользователя")
     @ValueSource(longs = {1L, 10L, 3543L, Long.MAX_VALUE})
     void getUser_withValidId_shouldReturnUser(Long id) {
         when(userDAO.findById(id)).thenReturn(validUser);
@@ -136,7 +100,7 @@ class UserServiceTests {
         verify(userDAO).findById(id);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Тест - {index}: Получения пользователя с id = [{0}] выбрасывает исключение")
     @ValueSource(longs = {0L, -10L})
     @NullSource
     void getUser_withInvalidId_shouldThrowException(Long id) {
@@ -152,7 +116,6 @@ class UserServiceTests {
         verify(userDAO).findById(1L);
     }
 
-    // getAllUsers tests
     @Test
     void getAllUsers_shouldReturnAllUsers() {
         List<User> expectedUsers = List.of(validUser);
@@ -164,14 +127,13 @@ class UserServiceTests {
         verify(userDAO).findAll();
     }
 
-    // updateUser tests
     @Test
     void updateUser_withValidUser_shouldUpdateUser() {
         userService.updateUser(validUser);
         verify(userDAO).update(validUser);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Тест - {index}: Обновление пользователя с [{0}] выбрасывает исключение")
     @MethodSource("invalidUserProviderForUpdate")
     @NullSource
     void updateUser_withInvalidUser_shouldThrowException(User user) {
@@ -179,14 +141,13 @@ class UserServiceTests {
         verify(userDAO, never()).update(any());
     }
 
-    // deleteUser tests
     @Test
     void deleteUser_withValidUser_shouldDeleteUser() {
         userService.deleteUser(validUser);
         verify(userDAO).delete(validUser);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Тест - {index}: Удаление пользователя с [{0}] выбрасывает исключение")
     @MethodSource("invalidUserProviderForDelete")
     @NullSource
     void deleteUser_withInvalidUser_shouldThrowException(User user) {
