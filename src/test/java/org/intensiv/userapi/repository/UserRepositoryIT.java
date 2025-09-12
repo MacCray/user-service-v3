@@ -2,6 +2,7 @@ package org.intensiv.userapi.repository;
 
 import org.intensiv.userapi.entity.User;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -35,6 +36,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should persist user when saving a valid user")
     void save_withValidUser_shouldPersistUser() {
         userRepository.save(validUser);
 
@@ -46,6 +48,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should throw exception when saving user with duplicate email")
     void save_withDuplicateEmail_shouldThrow() {
         User user = new User("Ivan", validUser.getEmail(), 20);
         userRepository.save(validUser);
@@ -54,6 +57,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should return user when user exists by ID")
     void findById_whenUserExists_shouldReturnUser() {
         userRepository.save(validUser);
         Long id = validUser.getId();
@@ -66,6 +70,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should return empty when user does not exist by ID")
     void findById_whenUserDoesNotExists_shouldReturnNull() {
         Optional<User> found = userRepository.findById(1L);
 
@@ -73,6 +78,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should return all users when users exist")
     void findAll_whenUsersExist_shouldReturnAllUsers() {
         User user = new User("Ivan", "my@mail.com", 20);
         User user2 = new User("Oleg", "oleg@gmail.com", 25);
@@ -98,6 +104,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should return empty list when no users exist")
     void findAll_WhenNoUsersExist_ShouldReturnEmptyList() {
         List<User> users = userRepository.findAll();
 
@@ -105,6 +112,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should update user when updating with valid data")
     void update_withValidUser_shouldUpdateUser() {
         userRepository.save(validUser);
         Long userId = validUser.getId();
@@ -119,6 +127,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should throw exception when updating user with duplicate email")
     void update_withDuplicateEmail_shouldThrow() {
         User user = new User("Ivan", "my@mail.com", 20);
         userRepository.save(validUser);
@@ -128,6 +137,7 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should delete user when deleting a valid user")
     void delete_withValidUser_shouldDeleteUser() {
         userRepository.save(validUser);
         Long userId = validUser.getId();
