@@ -1,157 +1,227 @@
 package org.intensiv.userapi.service;
 
-import org.intensiv.dao.UserDAO;
+import org.intensiv.userapi.dto.request.CreateUserRequestDto;
+import org.intensiv.userapi.dto.request.UpdateUserRequestDto;
+import org.intensiv.userapi.dto.response.UserResponseDto;
 import org.intensiv.userapi.entity.User;
+import org.intensiv.userapi.exception.DuplicateEmailException;
 import org.intensiv.userapi.exception.UserNotFoundException;
-import org.intensiv.userapi.exception.UserValidationException;
+import org.intensiv.userapi.mapper.UserMapper;
+import org.intensiv.userapi.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTests {
+    private static final Long USER_ID = 1L;
     @Mock
-    private UserDAO userDAO;
+    private UserRepository userRepository;
+    @Mock
+    private UserMapper userMapper;
     @InjectMocks
     private UserService userService;
-    private User validUser;
 
-    static Stream<Arguments> invalidUserProviderForCreate() {
-        return Stream.of(
-                Arguments.of(Named.of("Имя = null", new User(null, "email@gmail.com", 1))),
-                Arguments.of(Named.of("Имя = пустое", new User("", "email@gmail.com", 1))),
-                Arguments.of(Named.of("Имя = пробелы", new User("   ", "email@gmail.com", 1))),
-                Arguments.of(Named.of("Email = null", new User("Иван", null, 1))),
-                Arguments.of(Named.of("Email = пустой", new User("Иван", "", 1))),
-                Arguments.of(Named.of("Email = пробелы", new User("Иван", "  ", 1))),
-                Arguments.of(Named.of("Возраст = null", new User("Иван", "email@gmail.com", null))),
-                Arguments.of(Named.of("Возраст > 150", new User("Иван", "email@gmail.com", 200))),
-                Arguments.of(Named.of("Возраст < 0", new User("Иван", "email@gmail.com", -10))));
-    }
-
-    static Stream<Arguments> invalidUserProviderForDelete() {
-        return Stream.of(
-                Arguments.of(Named.of("Id = null", new User("Иван", "email@gmail.com", 1) {
-                    {
-                        setId(null);
-                    }
-                })),
-                Arguments.of(Named.of("Id = 0", new User("Иван", "email@gmail.com", 1) {
-                    {
-                        setId(0L);
-                    }
-                })),
-                Arguments.of(Named.of("Id < 0", new User("Иван", "email@gmail.com", 1) {
-                    {
-                        setId(-10L);
-                    }
-                })));
-    }
-
-    static Stream<Arguments> invalidUserProviderForUpdate() {
-        return Stream.concat(invalidUserProviderForDelete(), invalidUserProviderForCreate());
-    }
+    private CreateUserRequestDto createUserRequestDto;
+    private UpdateUserRequestDto updateUserRequestDto;
+    private UserResponseDto userResponseDto;
+    private User user;
 
     @BeforeEach
-    void setUpValidUser() {
-        validUser = new User("Roman", "email@gmail.com", 26);
-        validUser.setId(1L);
+    void setUp() {
+        createUserRequestDto = new CreateUserRequestDto("Роман Красиков", "krasikov.roman@gmail.com", 26);
+        updateUserRequestDto = new UpdateUserRequestDto("Роман Красиков", "krasikov.roman.new@gmail.com", 27);
+        userResponseDto = new UserResponseDto(1L, "Роман Красиков", "krasikov.roman@gmail.com");
+        user = new User("Роман Красиков", "krasikov.roman@gmail.com", 26);
+        user.setId(1L);
     }
 
     @Test
-    void createUser_withValidUser_shouldCallSave() {
-        userService.createUser(validUser);
-        verify(userDAO).save(validUser);
-    }
+    @DisplayName("Should create user when email doesn't exist")
+    void createUser_WhenEmailDoesNotExist_ShouldCreateUser() {
+        when(userRepository.existsByEmail(createUserRequestDto.email())).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userMapper.toUserEntity(createUserRequestDto)).thenReturn(user);
+        when(userMapper.toUserResponseDto(user)).thenReturn(userResponseDto);
 
-    @ParameterizedTest(name = "Тест - {index}: Создание пользователя с [{0}] выбрасывает исключение")
-    @MethodSource("invalidUserProviderForCreate")
-    @NullSource
-    void createUser_withInvalidUser_shouldThrowException(User user) {
-        assertThrows(UserValidationException.class, () -> userService.createUser(user));
-        verify(userDAO, never()).save(any());
-    }
+        UserResponseDto result = userService.createUser(createUserRequestDto);
 
-    @ParameterizedTest(name = "Тест - {index}: Получения пользователя с id = [{0}] возвращает корректного пользователя")
-    @ValueSource(longs = {1L, 10L, 3543L, Long.MAX_VALUE})
-    void getUser_withValidId_shouldReturnUser(Long id) {
-        when(userDAO.findById(id)).thenReturn(validUser);
-
-        User result = userService.getUser(id);
-
-        assertEquals(result, validUser);
-        verify(userDAO).findById(id);
-    }
-
-    @ParameterizedTest(name = "Тест - {index}: Получения пользователя с id = [{0}] выбрасывает исключение")
-    @ValueSource(longs = {0L, -10L})
-    @NullSource
-    void getUser_withInvalidId_shouldThrowException(Long id) {
-        assertThrows(UserValidationException.class, () -> userService.getUser(id));
-        verify(userDAO, never()).findById(id);
+        assertNotNull(result);
+        assertEquals(userResponseDto, result);
+        verify(userRepository).existsByEmail(createUserRequestDto.email());
+        verify(userRepository).save(any(User.class));
+        verify(userMapper).toUserResponseDto(user);
     }
 
     @Test
-    void getUser_whenUserNotFound_shouldThrowException() {
-        when(userDAO.findById(1L)).thenReturn(null);
+    @DisplayName("Should throw DuplicateEmailException when email already exists")
+    void createUser_WhenEmailExists_ShouldThrowDuplicateEmailException() {
+        when(userRepository.existsByEmail(createUserRequestDto.email())).thenReturn(true);
 
-        assertThrows(UserNotFoundException.class, () -> userService.getUser(1L));
-        verify(userDAO).findById(1L);
+        DuplicateEmailException exception = assertThrows(
+                DuplicateEmailException.class,
+                () -> userService.createUser(createUserRequestDto)
+        );
+
+        assertEquals("Пользователь с email " + createUserRequestDto.email() + " уже существует",
+                exception.getMessage());
+        verify(userRepository).existsByEmail(createUserRequestDto.email());
+        verify(userRepository, never()).save(any(User.class));
+        verify(userMapper, never()).toUserResponseDto(any(User.class));
     }
 
     @Test
-    void getAllUsers_shouldReturnAllUsers() {
-        List<User> expectedUsers = List.of(validUser);
-        when(userDAO.findAll()).thenReturn(expectedUsers);
+    @DisplayName("Should get user by id when user exists")
+    void getUser_WhenUserExists_ShouldReturnUser() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userMapper.toUserResponseDto(user)).thenReturn(userResponseDto);
 
-        List<User> result = userService.getAllUsers();
+        UserResponseDto result = userService.getUser(USER_ID);
 
-        assertEquals(expectedUsers, result);
-        verify(userDAO).findAll();
+        assertNotNull(result);
+        assertEquals(userResponseDto, result);
+        verify(userRepository).findById(USER_ID);
+        verify(userMapper).toUserResponseDto(user);
     }
 
     @Test
-    void updateUser_withValidUser_shouldUpdateUser() {
-        userService.updateUser(validUser);
-        verify(userDAO).update(validUser);
-    }
+    @DisplayName("Should throw UserNotFoundException when user doesn't exist")
+    void getUser_WhenUserDoesNotExist_ShouldThrowUserNotFoundException() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-    @ParameterizedTest(name = "Тест - {index}: Обновление пользователя с [{0}] выбрасывает исключение")
-    @MethodSource("invalidUserProviderForUpdate")
-    @NullSource
-    void updateUser_withInvalidUser_shouldThrowException(User user) {
-        assertThrows(UserValidationException.class, () -> userService.updateUser(user));
-        verify(userDAO, never()).update(any());
+        UserNotFoundException exception = assertThrows(
+                UserNotFoundException.class,
+                () -> userService.getUser(USER_ID)
+        );
+
+        assertEquals("User c id:" + USER_ID + " не найден", exception.getMessage());
+        verify(userRepository).findById(USER_ID);
+        verify(userMapper, never()).toUserResponseDto(any(User.class));
     }
 
     @Test
-    void deleteUser_withValidUser_shouldDeleteUser() {
-        userService.deleteUser(validUser);
-        verify(userDAO).delete(validUser);
+    @DisplayName("Should return all users")
+    void getAllUsers_WhenUsersExist_ShouldReturnAllUsers() {
+        User user2 = new User("Jane Doe", "jane.doe@example.com", 30);
+        user2.setId(2L);
+        UserResponseDto userResponseDto2 = new UserResponseDto(2L, "Jane Doe", "jane.doe@example.com");
+
+        List<User> users = Arrays.asList(user, user2);
+        List<UserResponseDto> expectedResponse = Arrays.asList(userResponseDto, userResponseDto2);
+
+        when(userRepository.findAll()).thenReturn(users);
+        when(userMapper.toUserResponseDto(user)).thenReturn(userResponseDto);
+        when(userMapper.toUserResponseDto(user2)).thenReturn(userResponseDto2);
+
+        List<UserResponseDto> result = userService.getAllUsers();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(expectedResponse, result);
+        verify(userRepository).findAll();
+        verify(userMapper, times(2)).toUserResponseDto(any(User.class));
     }
 
-    @ParameterizedTest(name = "Тест - {index}: Удаление пользователя с [{0}] выбрасывает исключение")
-    @MethodSource("invalidUserProviderForDelete")
-    @NullSource
-    void deleteUser_withInvalidUser_shouldThrowException(User user) {
-        assertThrows(UserValidationException.class, () -> userService.deleteUser(user));
-        verify(userDAO, never()).delete(any());
+    @Test
+    @DisplayName("Should return empty list when no users exist")
+    void getAllUsers_WhenNoUsersExist_ShouldReturnEmptyList() {
+        when(userRepository.findAll()).thenReturn(List.of());
+
+        List<UserResponseDto> result = userService.getAllUsers();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(userRepository).findAll();
+        verify(userMapper, never()).toUserResponseDto(any(User.class));
+    }
+
+    @Test
+    @DisplayName("Should update user when user exists and email is unique")
+    void updateUser_WhenUserExistsAndEmailIsUnique_ShouldUpdateUser() {
+        UserResponseDto updatedUserResponseDto = new UserResponseDto(USER_ID, "John Updated", "john.updated@example.com");
+
+        when(userRepository.existsByEmailAndIdNot(updateUserRequestDto.email(), USER_ID)).thenReturn(false);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toUserResponseDto(user)).thenReturn(updatedUserResponseDto);
+
+        UserResponseDto result = userService.updateUser(USER_ID, updateUserRequestDto);
+
+        assertNotNull(result);
+        assertEquals(updatedUserResponseDto, result);
+        verify(userRepository).existsByEmailAndIdNot(updateUserRequestDto.email(), USER_ID);
+        verify(userRepository).findById(USER_ID);
+        verify(userMapper).updateUserFromDto(updateUserRequestDto, user);
+        verify(userRepository).save(user);
+        verify(userMapper).toUserResponseDto(user);
+    }
+
+    @Test
+    @DisplayName("Should throw DuplicateEmailException when updating with existing email")
+    void updateUser_WhenEmailExists_ShouldThrowDuplicateEmailException() {
+        when(userRepository.existsByEmailAndIdNot(updateUserRequestDto.email(), USER_ID)).thenReturn(true);
+
+        DuplicateEmailException exception = assertThrows(
+                DuplicateEmailException.class,
+                () -> userService.updateUser(USER_ID, updateUserRequestDto)
+        );
+
+        assertEquals("Пользователь с email " + updateUserRequestDto.email() + " уже существует",
+                exception.getMessage());
+        verify(userRepository).existsByEmailAndIdNot(updateUserRequestDto.email(), USER_ID);
+        verify(userRepository, never()).findById(USER_ID);
+        verify(userMapper, never()).updateUserFromDto(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should throw UserNotFoundException when updating non-existent user")
+    void updateUser_WhenUserDoesNotExist_ShouldThrowUserNotFoundException() {
+        when(userRepository.existsByEmailAndIdNot(updateUserRequestDto.email(), USER_ID)).thenReturn(false);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+
+        UserNotFoundException exception = assertThrows(
+                UserNotFoundException.class,
+                () -> userService.updateUser(USER_ID, updateUserRequestDto)
+        );
+
+        assertEquals("User c id:" + USER_ID + " не найден", exception.getMessage());
+        verify(userRepository).existsByEmailAndIdNot(updateUserRequestDto.email(), USER_ID);
+        verify(userRepository).findById(USER_ID);
+        verify(userMapper, never()).updateUserFromDto(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should delete user successfully when user exists")
+    void deleteUser_ShouldDeleteUser_WhenUserExists() {
+        when(userRepository.deleteUserById(USER_ID)).thenReturn(1);
+
+        assertDoesNotThrow(() -> userService.deleteUser(USER_ID));
+
+        verify(userRepository).deleteUserById(USER_ID);
+    }
+
+    @Test
+    @DisplayName("Should throw UserNotFoundException when deleting non-existent user")
+    void deleteUser_WhenUserDoesNotExist_ShouldThrowUserNotFoundException() {
+        when(userRepository.deleteUserById(USER_ID)).thenReturn(0);
+
+        UserNotFoundException exception = assertThrows(
+                UserNotFoundException.class,
+                () -> userService.deleteUser(USER_ID)
+        );
+
+        assertEquals("User c id:" + USER_ID + " не найден", exception.getMessage());
+        verify(userRepository).deleteUserById(USER_ID);
     }
 }

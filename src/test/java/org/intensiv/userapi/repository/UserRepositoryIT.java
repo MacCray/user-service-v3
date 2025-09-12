@@ -1,117 +1,92 @@
 package org.intensiv.userapi.repository;
 
-import liquibase.Contexts;
-import liquibase.LabelExpression;
-import liquibase.Liquibase;
-import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.resource.ClassLoaderResourceAccessor;
-import org.hibernate.HibernateException;
-import org.junit.jupiter.api.BeforeAll;
+import org.intensiv.userapi.entity.User;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
+@DataJpaTest
 public class UserRepositoryIT {
     @Container
-    public static final PostgreSQLContainer<?> pgContainer = new PostgreSQLContainer<>("postgres:16.3")
+    @ServiceConnection
+    static final PostgreSQLContainer<?> pgContainer = new PostgreSQLContainer<>("postgres:16.3")
             .withDatabaseName("test_db")
             .withUsername("test")
             .withPassword("test");
-    private UserDAO userDAO;
+    @Autowired
+    private UserRepository userRepository;
     private User validUser;
-
-    @BeforeAll
-    static void setUpDatabase() throws Exception {
-        try (Connection connection = DriverManager.getConnection(
-                pgContainer.getJdbcUrl(),
-                pgContainer.getUsername(),
-                pgContainer.getPassword())) {
-
-            Database database = DatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-
-            Liquibase liquibase = new Liquibase(
-                    "db/changelog/db.changelog-master.xml",
-                    new ClassLoaderResourceAccessor(),
-                    database
-            );
-
-            liquibase.update(new Contexts(), new LabelExpression());
-        }
-
-        System.setProperty("hibernate.connection.url", pgContainer.getJdbcUrl());
-        System.setProperty("hibernate.connection.username", pgContainer.getUsername());
-        System.setProperty("hibernate.connection.password", pgContainer.getPassword());
-    }
 
     @BeforeEach
     void init() {
-        userDAO = new UserDAOImpl(HibernateUtil.getSessionFactory());
-
-        HibernateUtil.getSessionFactory().inTransaction(session ->
-                session.createMutationQuery("DELETE FROM User").executeUpdate()
-        );
         validUser = new User("Roman", "email@gmail.com", 26);
     }
 
     @Test
+    @DisplayName("Should persist user when saving a valid user")
     void save_withValidUser_shouldPersistUser() {
-        userDAO.save(validUser);
+        userRepository.save(validUser);
 
-        User found = userDAO.findById(validUser.getId());
-        assertNotNull(found);
-        assertEquals(validUser.getName(), found.getName());
-        assertEquals(validUser.getEmail(), found.getEmail());
-        assertEquals(validUser.getAge(), found.getAge());
+        Optional<User> found = userRepository.findById(validUser.getId());
+        assertTrue(found.isPresent());
+        assertEquals(validUser.getName(), found.get().getName());
+        assertEquals(validUser.getEmail(), found.get().getEmail());
+        assertEquals(validUser.getAge(), found.get().getAge());
     }
 
     @Test
+    @DisplayName("Should throw exception when saving user with duplicate email")
     void save_withDuplicateEmail_shouldThrow() {
         User user = new User("Ivan", validUser.getEmail(), 20);
-        userDAO.save(validUser);
+        userRepository.save(validUser);
 
-        assertThrows(RuntimeException.class, () -> userDAO.save(user));
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.saveAndFlush(user));
     }
 
     @Test
+    @DisplayName("Should return user when user exists by ID")
     void findById_whenUserExists_shouldReturnUser() {
-        userDAO.save(validUser);
+        userRepository.save(validUser);
         Long id = validUser.getId();
 
-        User found = userDAO.findById(id);
-        assertNotNull(found);
-        assertEquals(validUser.getName(), found.getName());
-        assertEquals(validUser.getEmail(), found.getEmail());
-        assertEquals(validUser.getAge(), found.getAge());
+        Optional<User> found = userRepository.findById(id);
+        assertTrue(found.isPresent());
+        assertEquals(validUser.getName(), found.get().getName());
+        assertEquals(validUser.getEmail(), found.get().getEmail());
+        assertEquals(validUser.getAge(), found.get().getAge());
     }
 
     @Test
+    @DisplayName("Should return empty when user does not exist by ID")
     void findById_whenUserDoesNotExists_shouldReturnNull() {
-        User found = userDAO.findById(1L);
+        Optional<User> found = userRepository.findById(1L);
 
-        assertNull(found);
+        assertTrue(found.isEmpty());
     }
 
     @Test
+    @DisplayName("Should return all users when users exist")
     void findAll_whenUsersExist_shouldReturnAllUsers() {
         User user = new User("Ivan", "my@mail.com", 20);
         User user2 = new User("Oleg", "oleg@gmail.com", 25);
-        userDAO.save(user);
-        userDAO.save(user2);
-        userDAO.save(validUser);
+        userRepository.save(user);
+        userRepository.save(user2);
+        userRepository.save(validUser);
 
-        List<User> users = userDAO.findAll();
+        List<User> users = userRepository.findAll();
 
         assertEquals(3, users.size());
         List<String> names = users.stream().map(User::getName).toList();
@@ -129,43 +104,53 @@ public class UserRepositoryIT {
     }
 
     @Test
+    @DisplayName("Should return empty list when no users exist")
     void findAll_WhenNoUsersExist_ShouldReturnEmptyList() {
-        List<User> users = userDAO.findAll();
+        List<User> users = userRepository.findAll();
 
         assertTrue(users.isEmpty());
     }
 
     @Test
+    @DisplayName("Should update user when updating with valid data")
     void update_withValidUser_shouldUpdateUser() {
-        userDAO.save(validUser);
+        userRepository.save(validUser);
         Long userId = validUser.getId();
 
-        validUser.setEmail("newEmail@gmail.com");
+        validUser.setEmail("NewEmail@gmail.com");
         validUser.setAge(27);
-        userDAO.update(validUser);
+        userRepository.save(validUser);
 
-        User updated = userDAO.findById(userId);
-        assertEquals("newEmail@gmail.com", updated.getEmail());
-        assertEquals(27, updated.getAge());
+        Optional<User> updated = userRepository.findById(userId);
+        assertEquals("NewEmail@gmail.com", updated.get().getEmail());
+        assertEquals(27, updated.get().getAge());
     }
 
     @Test
+    @DisplayName("Should throw exception when updating user with duplicate email")
     void update_withDuplicateEmail_shouldThrow() {
         User user = new User("Ivan", "my@mail.com", 20);
-        userDAO.save(validUser);
-        userDAO.save(user);
+        userRepository.save(validUser);
+        userRepository.save(user);
         validUser.setEmail("my@mail.com");
-        assertThrows(HibernateException.class, () -> userDAO.update(validUser));
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.saveAndFlush(validUser));
     }
 
     @Test
+    @DisplayName("Should delete user when deleting a valid user")
     void delete_withValidUser_shouldDeleteUser() {
-        userDAO.save(validUser);
+        userRepository.save(validUser);
         Long userId = validUser.getId();
 
-        userDAO.delete(validUser);
+        userRepository.delete(validUser);
 
-        User deleted = userDAO.findById(userId);
-        assertNull(deleted);
+        Optional<User> deleted = userRepository.findById(userId);
+        assertTrue(deleted.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should throw when deleting non-existent user")
+    void delete_whenUserNotExist_shouldReturnZero() {
+        assertEquals(0,userRepository.deleteUserById(1L));
     }
 }
