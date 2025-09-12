@@ -37,7 +37,9 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponseDto getUser(Long id) {
         log.debug("Получение пользователя по id={}", id);
-        return userRepository.findById(id).map(userMapper::toUserResponseDto).orElseThrow(() -> new UserNotFoundException("User c id:" + id + " не найден"));
+        return userRepository.findById(id)
+                .map(userMapper::toUserResponseDto)
+                .orElseThrow(() -> new UserNotFoundException("User c id:" + id + " не найден"));
     }
 
     @Transactional(readOnly = true)
@@ -63,7 +65,9 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         log.debug("Удаление пользователя id={}", id);
-        userRepository.delete(userRepository.findById(id).orElseThrow(() -> new UserNotFoundException("User c id:" + id + " не найден")));
+        if (userRepository.deleteUserById(id) == 0){
+            throw new UserNotFoundException("User c id:" + id + " не найден");
+        }
         log.info("Пользователь удален id={}", id);
     }
 }

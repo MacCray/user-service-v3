@@ -204,18 +204,17 @@ class UserServiceTests {
     @Test
     @DisplayName("Should delete user successfully when user exists")
     void deleteUser_ShouldDeleteUser_WhenUserExists() {
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRepository.deleteUserById(USER_ID)).thenReturn(1);
 
         assertDoesNotThrow(() -> userService.deleteUser(USER_ID));
 
-        verify(userRepository).findById(USER_ID);
-        verify(userRepository).delete(user);
+        verify(userRepository).deleteUserById(USER_ID);
     }
 
     @Test
     @DisplayName("Should throw UserNotFoundException when deleting non-existent user")
     void deleteUser_WhenUserDoesNotExist_ShouldThrowUserNotFoundException() {
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.deleteUserById(USER_ID)).thenReturn(0);
 
         UserNotFoundException exception = assertThrows(
                 UserNotFoundException.class,
@@ -223,7 +222,6 @@ class UserServiceTests {
         );
 
         assertEquals("User c id:" + USER_ID + " не найден", exception.getMessage());
-        verify(userRepository).findById(USER_ID);
-        verify(userRepository, never()).delete(any(User.class));
+        verify(userRepository).deleteUserById(USER_ID);
     }
 }

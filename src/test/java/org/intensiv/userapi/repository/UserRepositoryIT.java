@@ -147,4 +147,10 @@ public class UserRepositoryIT {
         Optional<User> deleted = userRepository.findById(userId);
         assertTrue(deleted.isEmpty());
     }
+
+    @Test
+    @DisplayName("Should throw when deleting non-existent user")
+    void delete_whenUserNotExist_shouldReturnZero() {
+        assertEquals(0,userRepository.deleteUserById(1L));
+    }
 }
